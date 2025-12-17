@@ -35,6 +35,22 @@ resource "aws_security_group" "asg_instance_01" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    description = "Allow ICMP outbound (ping)"
+    from_port   = -1
+    to_port     = -1
+    protocol    = "icmp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    description = "Allow traceroute UDP outbound"
+    from_port   = 33434
+    to_port     = 33534
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags = local.common_tags
 }
 

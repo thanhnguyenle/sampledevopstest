@@ -60,6 +60,7 @@ jobs:
     name: Terraform Apply
     needs: wait-for-approval
     runs-on: ubuntu-latest
+    environment: secrets
     defaults:
       run:
         working-directory: ./iac
@@ -116,7 +117,7 @@ jobs:
 
       - name: Create Ansible Vars File
         run: |
-          cat > ../ansible/vars.yml <<EOF
+          cat > ../ansible/vars.yaml <<EOF
           ---
           app_dir: "/home/ec2-user/app"
           api_port: "5000"
@@ -133,12 +134,13 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ansible-vars
-          path: ansible/vars.yml
+          path: ansible/vars.yaml
 
   ansible:
     name: Ansible Configure
     needs: terraform-apply
     runs-on: ubuntu-latest
+    environment: secrets
     defaults:
       run:
         working-directory: ./ansible
@@ -172,8 +174,5 @@ jobs:
       - name: Install Ansible
         run: pip install ansible
       
-      - name: Wait for EC2 ready
-        run: sleep 90
-      
       - name: Run Ansible Playbook
-        run: ansible-playbook -i inventory.ini playbook.yml
+        run: ansible-playbook -i inventory.ini playbook.yaml
