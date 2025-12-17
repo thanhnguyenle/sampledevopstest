@@ -1,0 +1,12 @@
+#cloud-config
+
+users:
+  - default
+  - name: ec2-user
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCm7235wYbgbvNxQJo4+tcnj+6dJ4PNCDIN5BgPEBmuVcn9r3nREY2T5YAvFqVO5xeEAl1VG1wnRlSDoXnx0vdkWOsYVvL+tbeY7o0qyLVi2aXLYmPYfbK9QW9gXpHzhpiz4JViiVgkEV1cuhJY4H9M+wNnyVJoKJDWfazel8jgCLHHWU1crvNiQilFiSARz9cJMjk2CZn3LyzCM+i/CYq1xaUp8cf9/inK5LEQC/au41aXCAgJ/tcVMjl2ngEMbE0LCGql3o7xAZt4iOMtd9eq3edczucpZmQ+KWnHIOAqDNT8/4df/QtCwWDg2hR/54se32wgkax+nBk49ia7w8gs+inn7MjOD3ViC9kdPIZOZAbeKiqq5tAGECds7c3pqlWzEjSjy5yELaoL00D7Mmvj256/VCcFfmb2Z1fDxjAAw4yQxXR9LzFX//v/X7GZ4alfrJirhT1vCkZaNuEZFuynHh3sf5JBCBrdYwhhJqvdihO4j1bUWXhsxBqJ+7hN5JE= thanhnguyen@ThanhNguyen
+
+ssh_pwauth: false
+disable_root: true

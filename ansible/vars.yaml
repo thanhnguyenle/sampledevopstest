@@ -1,0 +1,3 @@
+app_dir: /home/ec2-user/app
+api_port: "5000"
+target_instance_ip: "10.0.2.137"

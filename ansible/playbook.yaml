@@ -1,0 +1,85 @@
+- name: Deploy App
+  hosts: app
+  become: true
+  vars_files:
+    - vars.yaml
+
+  tasks:
+    - name: Update all packages
+      dnf:
+        name: "*"
+        state: latest
+        update_cache: yes
+
+    - name: Install Docker and Python3
+      dnf:
+        name:
+          - docker
+          - python3
+          - python3-pip
+        state: present
+
+    - name: Start and enable Docker service
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    - name: Create app directory
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+        mode: '0755'
+
+    - name: Copy app files
+      copy:
+        src: "{{ playbook_dir }}/app/"
+        dest: "{{ app_dir }}/"
+        owner: ec2-user
+        group: ec2-user
+
+    - name: Build Docker image
+      docker_image:
+        name: app
+        source: build
+        build:
+          path: "{{ app_dir }}"
+          pull: yes
+        state: present
+        force_source: yes
+
+    - name: Run Docker container
+      docker_container:
+        name: app
+        image: app
+        state: started
+        ports:
+          - "80:5000"
+        env:
+          TARGET_IP: "{{ target_instance_ip }}"
+          API_PORT: "{{ api_port }}"
+        networks:
+          - name: bridge
+
+    - name: Wait for container to be healthy
+      wait_for:
+        port: 80
+        delay: 5
+        timeout: 60
+
+    - name: Verify container is running
+      docker_container_info:
+        name: app
+      register: container_info
+
+    - name: Display container status
+      debug:
+        msg: "Container app is {{ container_info.container.State.Status }}"
