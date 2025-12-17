@@ -5,7 +5,7 @@ from datetime import datetime
 
 app = Flask(__name__)
 
-TARGET_IP = os.getenv('TARGET_IP', '10.0.2.1')
+TARGET_IP = os.getenv('TARGET_IP', '0.0.0.0')
 API_PORT = int(os.getenv('API_PORT', 5000))
 
 def get_ping_latency(host):
@@ -30,25 +30,26 @@ def get_ping_latency(host):
     return None
 
 def get_traceroute_latency(host):
-    cmd = ['traceroute', '-n', host]
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+    cmd = ['traceroute', '-n', '-q', '3', host]
+    result = subprocess.run(cmd, capture_output=True, text=True)  
+    lines = result.stdout.strip().split('\n')
+    for line in reversed(lines):
+        if host in line and 'ms' in line:
+            parts = line.split()
+            latencies = []
+            for i in range(len(parts) - 1, 0, -1):
+                if parts[i] == 'ms':
+                    try:
+                        latencies.append(float(parts[i - 1]))
+                    except ValueError:
+                        pass
+            if latencies and len(latencies) >= 3:
+                return {
+                    'min': f'{round(min(latencies), 3)} ms',
+                    'avg': f'{round(sum(latencies) / len(latencies), 3)} ms',
+                    'max': f'{round(max(latencies), 3)} ms'
+                }
     
-    latencies = []
-    for line in result.stdout.split('\n'):
-        parts = line.split()
-        for i, part in enumerate(parts):
-            if part == 'ms':
-                try:
-                    latencies.append(float(parts[i-1]))
-                except:
-                    pass
-    
-    if latencies:
-        return {
-            'min': f'{round(min(latencies), 3)} ms',
-            'avg': f'{round(sum(latencies) / len(latencies), 3)} ms',
-            'max': f'{round(max(latencies), 3)} ms'
-        }
     return None
 
 @app.route('/latency', methods=['GET'])
