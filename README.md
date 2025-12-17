@@ -53,16 +53,15 @@ curl http://[PUBLIC IP INSTANCE 1]/latency
 ```json
 {
   "ICMP": {
-    "avg": 0.252,
-    "max": 0.291,
-    "min": 0.217
+    "avg": "0.253 ms",
+    "max": "0.371 ms",
+    "min": "0.212 ms"
   },
   "UDP": {
-    "avg": 0.173,
-    "max": 0.353,
-    "min": 0.006
+    "avg": "0.205 ms",
+    "max": "0.223 ms",
+    "min": "0.186 ms"
   },
-  "target_ip": "10.0.2.137",
-  "timestamp": "2025-12-17T03:48:03.608814"
+  "target_ip": "10.0.2.183"
 }
 ```

@@ -2,6 +2,15 @@ name: Deploy Demo Infrastructure
 
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: 'Terraform Action'
+        required: true
+        type: choice
+        options:
+          - apply
+          - destroy
+        default: apply
 
 env:
   AWS_REGION: us-east-1
@@ -44,7 +53,12 @@ jobs:
             -backend-config="dynamodb_table=${{ secrets.TERRAFORM_DYNAMODB_TABLE }}"
       
       - name: Terraform Plan
-        run: terraform plan
+        run: |
+          if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+            terraform plan -destroy
+          else
+            terraform plan
+          fi
 
   wait-for-approval:
     name: Wait for Approval
@@ -54,10 +68,10 @@ jobs:
     
     steps:
       - name: Approval Required
-        run: echo "Approved! Proceeding with terraform apply..."
+        run: echo "Approved! Proceeding with terraform ${{ github.event.inputs.action }}..."
 
-  terraform-apply:
-    name: Terraform Apply
+  terraform-execute:
+    name: Terraform ${{ github.event.inputs.action }}
     needs: wait-for-approval
     runs-on: ubuntu-latest
     environment: secrets
@@ -93,16 +107,23 @@ jobs:
             -backend-config="region=${{ secrets.AWS_REGION }}" \
             -backend-config="dynamodb_table=${{ secrets.TERRAFORM_DYNAMODB_TABLE }}"
  
-      - name: Terraform Apply
-        run: terraform apply -auto-approve
+      - name: Terraform ${{ github.event.inputs.action }}
+        run: |
+          if [ "${{ github.event.inputs.action }}" == "destroy" ]; then
+            terraform destroy -auto-approve
+          else
+            terraform apply -auto-approve
+          fi
       
       - name: Get EC2 IPs
+        if: github.event.inputs.action == 'apply'
         id: ec2_ips
         run: |
           echo "instance_01=$(terraform output -raw instance_01_public_ip)" >> $GITHUB_OUTPUT
           echo "instance_02=$(terraform output -raw instance_02_private_ip)" >> $GITHUB_OUTPUT
       
       - name: Create Ansible Inventory
+        if: github.event.inputs.action == 'apply'
         run: |
           cat > ../ansible/inventory.ini <<EOF
           [app]
@@ -116,6 +137,7 @@ jobs:
           EOF
 
       - name: Create Ansible Vars File
+        if: github.event.inputs.action == 'apply'
         run: |
           cat > ../ansible/vars.yaml <<EOF
           ---
@@ -125,12 +147,14 @@ jobs:
           EOF
       
       - name: Upload Inventory
+        if: github.event.inputs.action == 'apply'
         uses: actions/upload-artifact@v4
         with:
           name: ansible-inventory
           path: ansible/inventory.ini
 
       - name: Upload Vars File
+        if: github.event.inputs.action == 'apply'
         uses: actions/upload-artifact@v4
         with:
           name: ansible-vars
@@ -138,7 +162,8 @@ jobs:
 
   ansible:
     name: Ansible Configure
-    needs: terraform-apply
+    needs: terraform-execute
+    if: github.event.inputs.action == 'apply'
     runs-on: ubuntu-latest
     environment: secrets
     defaults:

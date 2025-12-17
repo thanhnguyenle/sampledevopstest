@@ -4,9 +4,10 @@ data "aws_ssm_parameter" "amazon_linux_2023" {
 
 resource "aws_instance" "instance_01" {
   ami                    = data.aws_ssm_parameter.amazon_linux_2023.value
-  instance_type          = "t3.micro"
-  subnet_id              = aws_subnet.snet_instance_01.id
-  vpc_security_group_ids = [aws_security_group.asg_instance_01.id]
+  instance_type          = "m5.large"
+  subnet_id              = aws_subnet.snet_instances.id
+  vpc_security_group_ids = [aws_security_group.asg_instances.id]
+  placement_group        = aws_placement_group.cluster.id
   user_data              = filebase64("cloud-init.yaml")
   
   root_block_device {
@@ -17,17 +18,18 @@ resource "aws_instance" "instance_01" {
   tags = merge(local.common_tags, { Name = "instance-01" })
 
   depends_on = [
-    aws_security_group.asg_instance_01,
-    aws_subnet.snet_instance_01,
+    aws_security_group.asg_instances,
+    aws_subnet.snet_instances,
     data.aws_ssm_parameter.amazon_linux_2023
   ]
 }
 
 resource "aws_instance" "instance_02" {
   ami                    = data.aws_ssm_parameter.amazon_linux_2023.value
-  instance_type          = "t3.micro"
-  subnet_id              = aws_subnet.snet_instance_02.id
-  vpc_security_group_ids = [aws_security_group.asg_instance_02.id]
+  instance_type          = "m5.large"
+  subnet_id              = aws_subnet.snet_instances.id
+  vpc_security_group_ids = [aws_security_group.asg_instances.id]
+  placement_group        = aws_placement_group.cluster.id
   user_data              = filebase64("cloud-init.yaml")
   
   root_block_device {
@@ -38,8 +40,8 @@ resource "aws_instance" "instance_02" {
   tags = merge(local.common_tags, { Name = "instance-02" })
 
   depends_on = [
-    aws_security_group.asg_instance_02,
-    aws_subnet.snet_instance_02,
+    aws_security_group.asg_instances,
+    aws_subnet.snet_instances,
     data.aws_ssm_parameter.amazon_linux_2023
   ]
 }
