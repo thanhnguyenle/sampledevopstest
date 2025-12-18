@@ -1,14 +1,19 @@
-output "instance_01_public_ip" {
-  description = "Public IP of EC2 instance 01"
-  value       = aws_instance.instance_01.public_ip
+output "instance_us_east_public_ip" {
+  description = "Public IP of US-EAST-1 instance"
+  value       = aws_instance.instance_east.public_ip
 }
 
-output "instance_01_private_ip" {
-  description = "Private IP of EC2 instance 01"
-  value       = aws_instance.instance_01.private_ip
+output "instance_singapore_public_ip" {
+  description = "Public IP of Singapore instance"
+  value       = aws_instance.instance_singapore.public_ip
 }
 
-output "instance_02_private_ip" {
-  description = "Private IP of EC2 instance 02"
-  value       = aws_instance.instance_02.private_ip
+output "instance_us_east_private_ip" {
+  description = "Private IP of US-EAST-1 instance"
+  value       = aws_instance.instance_east.private_ip
+}
+
+output "instance_singapore_private_ip" {
+  description = "Private IP of Singapore instance"
+  value       = aws_instance.instance_singapore.private_ip
 }

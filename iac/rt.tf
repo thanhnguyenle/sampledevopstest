@@ -1,15 +1,35 @@
-resource "aws_route_table" "route_traffic_to_igw" {
-  vpc_id       = aws_vpc.main.id
+resource "aws_route_table" "rt_east" {
+  provider = aws.us_east
+  vpc_id   = aws_vpc.vpc_east.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
+    gateway_id = aws_internet_gateway.igw_east.id
   }
 
-  tags         = local.common_tags
+  tags = merge(local.common_tags, { Name = "rt-us-east-1" })
 }
 
-resource "aws_route_table_association" "rta_instance01" {
-  subnet_id      = aws_subnet.snet_instances.id
-  route_table_id = aws_route_table.route_traffic_to_igw.id
+resource "aws_route_table_association" "rta_east" {
+  provider       = aws.us_east
+  subnet_id      = aws_subnet.snet_east.id
+  route_table_id = aws_route_table.rt_east.id
+}
+
+resource "aws_route_table" "rt_singapore" {
+  provider = aws.singapore
+  vpc_id   = aws_vpc.vpc_singapore.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw_singapore.id
+  }
+
+  tags = merge(local.common_tags, { Name = "rt-singapore" })
+}
+
+resource "aws_route_table_association" "rta_singapore" {
+  provider       = aws.singapore
+  subnet_id      = aws_subnet.snet_singapore.id
+  route_table_id = aws_route_table.rt_singapore.id
 }
