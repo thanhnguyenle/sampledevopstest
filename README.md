@@ -65,3 +65,20 @@ curl http://[PUBLIC IP INSTANCE 1]/latency
   "target_ip": "10.0.2.183"
 }
 ```
+
+**CASE 2: Same VPC, same Subnet, same rack, PING USE PRIVATE IP**
+```json
+{
+  "ICMP": {
+    "avg": "0.233 ms",
+    "max": "0.258 ms",
+    "min": "0.212 ms"
+  },
+  "UDP": {
+    "avg": "0.196 ms",
+    "max": "0.218 ms",
+    "min": "0.175 ms"
+  },
+  "target_ip": "10.0.2.218"
+}
+```
