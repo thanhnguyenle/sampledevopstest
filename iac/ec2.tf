@@ -1,13 +1,19 @@
-data "aws_ssm_parameter" "amazon_linux_2023" {
-  name = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+data "aws_ssm_parameter" "amazon_linux_2023_east" {
+  provider = aws.us_east
+  name     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
-resource "aws_instance" "instance_01" {
-  ami                    = data.aws_ssm_parameter.amazon_linux_2023.value
-  instance_type          = "m5.large"
-  subnet_id              = aws_subnet.snet_instances.id
-  vpc_security_group_ids = [aws_security_group.asg_instances.id]
-  placement_group        = aws_placement_group.cluster.id
+data "aws_ssm_parameter" "amazon_linux_2023_singapore" {
+  provider = aws.singapore
+  name     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+}
+
+resource "aws_instance" "instance_east" {
+  provider               = aws.us_east
+  ami                    = data.aws_ssm_parameter.amazon_linux_2023_east.value
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.snet_east.id
+  vpc_security_group_ids = [aws_security_group.asg_east.id]
   user_data              = filebase64("cloud-init.yaml")
   
   root_block_device {
@@ -15,21 +21,15 @@ resource "aws_instance" "instance_01" {
     volume_type = "gp3"
   }
 
-  tags = merge(local.common_tags, { Name = "instance-01" })
-
-  depends_on = [
-    aws_security_group.asg_instances,
-    aws_subnet.snet_instances,
-    data.aws_ssm_parameter.amazon_linux_2023
-  ]
+  tags = merge(local.common_tags, { Name = "instance-us-east-1" })
 }
 
-resource "aws_instance" "instance_02" {
-  ami                    = data.aws_ssm_parameter.amazon_linux_2023.value
-  instance_type          = "m5.large"
-  subnet_id              = aws_subnet.snet_instances.id
-  vpc_security_group_ids = [aws_security_group.asg_instances.id]
-  placement_group        = aws_placement_group.cluster.id
+resource "aws_instance" "instance_singapore" {
+  provider               = aws.singapore
+  ami                    = data.aws_ssm_parameter.amazon_linux_2023_singapore.value
+  instance_type          = "t3.micro"
+  subnet_id              = aws_subnet.snet_singapore.id
+  vpc_security_group_ids = [aws_security_group.asg_singapore.id]
   user_data              = filebase64("cloud-init.yaml")
   
   root_block_device {
@@ -37,12 +37,5 @@ resource "aws_instance" "instance_02" {
     volume_type = "gp3"
   }
 
-  tags = merge(local.common_tags, { Name = "instance-02" })
-
-  depends_on = [
-    aws_security_group.asg_instances,
-    aws_subnet.snet_instances,
-    data.aws_ssm_parameter.amazon_linux_2023
-  ]
+  tags = merge(local.common_tags, { Name = "instance-singapore" })
 }
-
