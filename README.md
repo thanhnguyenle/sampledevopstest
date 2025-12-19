@@ -2,6 +2,35 @@
 
 A simple Flask API that measures network latency between two EC2 instances using both ICMP (ping), TCP (curl) and UDP (traceroute) protocols.
 
+- [Sample DevOps Test](#sample-devops-test)
+  - [Prerequisites](#prerequisites)
+  - [Project Structure](#project-structure)
+  - [Quick Start](#quick-start)
+    - [1. Deploy Infrastructure](#1-deploy-infrastructure)
+    - [2. Get Instance IPs from output](#2-get-instance-ips-from-output)
+    - [3. Update Ansible](#3-update-ansible)
+    - [4. Deploy Application](#4-deploy-application)
+    - [5. Test the API](#5-test-the-api)
+  - [Technology Choices](#technology-choices)
+    - [Infrastructure](#infrastructure)
+    - [Application](#application)
+    - [Deployment](#deployment)
+  - [Test Scenarios](#test-scenarios)
+    - [Case 1: Same VPC, Different Subnets](#case-1-same-vpc-different-subnets)
+    - [Case 2: Same VPC, Same Subnet, Same Rack](#case-2-same-vpc-same-subnet-same-rack)
+    - [Case 3: Different Regions (Singapore ↔ US-EAST-1)](#case-3-different-regions-singapore--us-east-1)
+    - [Case 4: Different Regions (Singapore ↔ US-EAST-1)](#case-4-different-regions-singapore--us-east-1)
+    - [Case 5: Nearby Regions (US-EAST-2 ↔ US-EAST-1)](#case-5-nearby-regions-us-east-2--us-east-1)
+  - [Understanding the Metrics](#understanding-the-metrics)
+    - [Round-Trip Time (RTT) vs One-Way Latency](#round-trip-time-rtt-vs-one-way-latency)
+    - [ICMP vs UDP vs TCP](#icmp-vs-udp-vs-tcp)
+  - [Cleanup](#cleanup)
+  - [Assumptions \& Limitations](#assumptions--limitations)
+    - [Assumptions](#assumptions)
+    - [Limitations](#limitations)
+    - [Future Improvements](#future-improvements)
+---
+
 ## Prerequisites
 
 - Terraform installed (v1.14.2)
