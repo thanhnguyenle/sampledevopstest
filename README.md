@@ -26,7 +26,7 @@ sampledevopstest
 │   ├── ansible.cfg            # Ansible configuration
 │   └── vars.yaml              # Variables
 ├── iac
-│   ├── cloud-init.yaml        # Init state
+│   ├── cloud-init.yaml        # Init EC2 state
 │   ├── common.tf              # Common tags
 │   ├── ec2.tf                 # EC2 instances
 │   ├── igw.tf                 # Internet Gateway
@@ -43,6 +43,24 @@ sampledevopstest
 
 ### 1. Deploy Infrastructure
 
+Update `iac/cloud-init.yaml`:
+
+```json
+#cloud-config
+
+users:
+  - default
+  - name: ec2-user
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - <YOUR PUBLIC KEY>
+
+ssh_pwauth: false
+disable_root: true
+```
+
+Run command:
 ```bash
 cd iac
 terraform init
@@ -55,10 +73,10 @@ terraform apply -auto-approve
 ```log
 Outputs:
 
-instance_singapore_private_ip = "10.2.1.186"
-instance_singapore_public_ip = "54.251.210.47"
-instance_us_east_private_ip = "10.1.1.108"
-instance_us_east_public_ip = "44.199.249.139"
+instance_us_east_private_ip = <INSTANCE_1_PRIVATE_IP>
+instance_us_east_public_ip = <INSTANCE_1_PUBLIC_IP>
+instance_east2_private_ip = <INSTANCE_2_PRIVATE_IP>
+instance_east2_public_ip = <INSTANCE_2_PUBLIC_IP>
 ```
 
 ### 3. Update Ansible
@@ -75,6 +93,7 @@ ansible_ssh_private_key_file=./id_rsa
 ansible_python_interpreter=/usr/bin/python3
 ansible_ssh_common_args='-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'
 ```
+=> The `id_rsa` file contains the private key that Ansible uses to SSH into Instance 1 for setup (same folder with `ansible/inventory.ini`)
 
 Edit `ansible/vars.yaml`:
 
@@ -114,12 +133,12 @@ curl http://<INSTANCE_1_PUBLIC_IP>/latency
 - **Docker**: Containerized application
 - **cloud-init**: Automated instance bootstrapping
 
-## Test Scenarios & Results
+## Test Scenarios
 
 ### Case 1: Same VPC, Different Subnets
-**Configuration:** Two instances in same VPC but different subnets  
-**Connection:** Private IP  
-**Expected Latency:** ~0.2-0.3 ms RTT
+- **Configuration:** Two instances in same VPC but different subnets  
+- **Connection:** Private IP  
+- **Expected Latency:** ~0.2-0.3 ms RTT
 
 ```json
 {
@@ -140,9 +159,9 @@ curl http://<INSTANCE_1_PUBLIC_IP>/latency
 **Observation:** UDP shows slightly lower latency than ICMP (~0.05ms). This is expected as UDP has less protocol overhead.
 
 ### Case 2: Same VPC, Same Subnet, Same Rack
-**Configuration:** Two instances in same subnet with placement group  
-**Connection:** Private IP  
-**Expected Latency:** ~0.2 ms RTT (minimal difference from Case 1)
+- **Configuration:** Two instances in same subnet with placement group  
+- **Connection:** Private IP  
+- **Expected Latency:** ~0.2 ms RTT (minimal difference from Case 1)
 
 ```json
 {
@@ -160,12 +179,12 @@ curl http://<INSTANCE_1_PUBLIC_IP>/latency
 }
 ```
 
-**Observation:** Latency is nearly identical to Case 1. Placement groups ensure instances are on same physical rack, but AWS networking is already highly optimized within an AZ.
+**Observation:** Latency is nearly identical to Case 1. Although placement groups ensure that instances are located on the same physical rack, the difference is not clearly when transferring small packets.
 
 ### Case 3: Different Regions (Singapore ↔ US-EAST-1)
-**Configuration:** Instances in different AWS regions  
-**Connection:** Public IP (through internet)  
-**Expected Latency:** ~220-260 ms RTT
+- **Configuration:** Instances in different AWS regions  
+- **Connection:** Public IP (through internet)  
+- **Expected Latency:** ~219-232 ms RTT
 
 ```json
 {
@@ -183,12 +202,105 @@ curl http://<INSTANCE_1_PUBLIC_IP>/latency
 }
 ```
 
-**Observations:**
-- **~1000x higher latency** than same-region scenarios
-- **Physical distance:** ~9,500 miles / 15,300 km
-- **Speed of light limit:** ~76ms one-way (theoretical minimum)
-- **Actual one-way:** ~110ms (accounting for routing, amplifiers, processing)
-- **UDP shows more variance** (min: 219ms, max: 232ms) due to internet routing variability
+**Observation:** Latency is higher due to the physical distance.
+
+### Case 4: Different Regions (Singapore ↔ US-EAST-1)
+- **Configuration:** Instances in different AWS regions  
+- **Connection:** Private IP
+- **Expected Latency:** ~219-224 ms RTT
+```json
+{
+  "measurements": {
+    "ICMP": {
+      "avg": "224.0 ms",
+      "max": "224.0 ms",
+      "min": "224.0 ms"
+    },
+    "TCP": {
+      "DNS Lookup Time": "0.015 ms",
+      "Pretransfer Time": "0.0 ms",
+      "Redirect Time": "0.0 ms",
+      "SSL Handshake Time": "0.0 ms",
+      "Start Transfer Time": "0.0 ms",
+      "TCP Connect Time": "0.0 ms",
+      "Total Time": "224.849 ms"
+    },
+    "UDP": {
+      "avg": "220.347 ms",
+      "max": "221.28 ms",
+      "min": "219.414 ms"
+    }
+  },
+  "target_ip": "10.2.1.29",
+  "target_port": "80"
+}
+```
+
+**Observation:** Latency is similar to the public IP case. The large latency caused by geographic distance makes it difficult to clearly the difference between traffic transferred via public IPs (through the Internet) and private IPs (over the AWS backbone)
+
+### Case 5: Nearby Regions (US-EAST-2 ↔ US-EAST-1)
+- **Configuration:** Instances in different but nearby AWS regions
+- **Connection:** Public IP vs Private IP
+
+- Public IP (through internet)
+```json
+{
+  "measurements": {
+    "ICMP": {
+      "avg": "12.29 ms",
+      "max": "12.3 ms",
+      "min": "12.2 ms"
+    },
+    "TCP": {
+      "DNS Lookup Time": "0.014 ms",
+      "Pretransfer Time": "0.0 ms",
+      "Redirect Time": "0.0 ms",
+      "SSL Handshake Time": "0.0 ms",
+      "Start Transfer Time": "0.0 ms",
+      "TCP Connect Time": "0.0 ms",
+      "Total Time": "12.397 ms"
+    },
+    "UDP": {
+      "avg": "10.916 ms",
+      "max": "12.065 ms",
+      "min": "9.666 ms"
+    }
+  },
+  "target_ip": "3.145.125.2",
+  "target_port": "80"
+}
+```
+
+- Private IP
+```json
+{
+  "measurements": {
+    "ICMP": {
+      "avg": "11.53 ms",
+      "max": "11.8 ms",
+      "min": "11.5 ms"
+    },
+    "TCP": {
+      "DNS Lookup Time": "0.018 ms",
+      "Pretransfer Time": "0.0 ms",
+      "Redirect Time": "0.0 ms",
+      "SSL Handshake Time": "0.0 ms",
+      "Start Transfer Time": "0.0 ms",
+      "TCP Connect Time": "0.0 ms",
+      "Total Time": "11.847 ms"
+    },
+    "UDP": {
+      "avg": "11.375 ms",
+      "max": "11.467 ms",
+      "min": "11.283 ms"
+    }
+  },
+  "target_ip": "10.2.1.56",
+  "target_port": "80"
+}
+```
+
+**Observations:** There is still a difference between data transfer over public and private IPs. Although the gap is only around 1–2 ms, it can still have an impact on HPC systems.
 
 ## Understanding the Metrics
 
@@ -196,76 +308,10 @@ curl http://<INSTANCE_1_PUBLIC_IP>/latency
 - **RTT**: Time for packet to go from Instance 1 → Instance 2 → Instance 1
 - **One-Way Latency**: Approximately `RTT / 2`
 
-**Example:**
-```
-RTT = 0.24 ms  →  One-way latency ≈ 0.12 ms
-RTT = 220 ms   →  One-way latency ≈ 110 ms
-```
-
-### ICMP vs UDP
+### ICMP vs UDP vs TCP
 - **ICMP (ping)**: Simpler protocol, may be rate-limited by routers
-- **UDP (traceroute)**: Shows network path, slightly lower overhead
-- **Difference**: Usually 0.02-0.05 ms (negligible for most applications)
-
-## Deployment Scenarios
-
-The infrastructure supports multiple deployment patterns:
-
-### 1. Same Subnet + Placement Group (`ec2.tf`)
-- **Use case:** High-frequency trading, real-time gaming
-- **Latency:** ~0.2 ms RTT
-- **Cost:** Standard
-
-### 2. Different Subnets (modify `snet.tf`)
-- **Use case:** Network isolation, multi-tier applications
-- **Latency:** ~0.3 ms RTT
-- **Cost:** Standard
-
-### 3. VPC Peering (add `vpc_peering.tf`)
-- **Use case:** Isolated environments, security boundaries
-- **Latency:** ~1-2 ms RTT
-- **Cost:** No data transfer charges within same region
-
-### 4. Cross-Region (modify `providers.tf`)
-- **Use case:** Disaster recovery, global services
-- **Latency:** 60-260 ms RTT (depends on regions)
-- **Cost:** Higher (data transfer charges apply)
-
-## Troubleshooting
-
-### Application not responding
-```bash
-# SSH to Instance 1
-ssh ec2-user@<INSTANCE_1_PUBLIC_IP>
-
-# Check if container is running
-docker ps
-
-# Check logs
-docker logs latency-monitor
-
-# Restart if needed
-docker restart latency-monitor
-```
-
-### Cannot ping Instance 2
-```bash
-# Verify security group allows ICMP
-aws ec2 describe-security-groups --group-ids <SG_ID>
-
-# Test manual ping from Instance 1
-ssh ec2-user@<INSTANCE_1_PUBLIC_IP>
-ping <INSTANCE_2_PRIVATE_IP>
-```
-
-### Ansible connection fails
-```bash
-# Test SSH access
-ssh -i ~/.ssh/your-key.pem ec2-user@<INSTANCE_PUBLIC_IP>
-
-# Check security group allows port 22
-# Verify the key pair name in ec2.tf matches your local key
-```
+- **UDP (traceroute)**: Slightly lower protocol overhead
+- **TCP (curl)**: Measures application-layer latency, including TCP handshake and connection setup
 
 ## Cleanup
 
@@ -277,31 +323,19 @@ terraform destroy -auto-approve
 ## Assumptions & Limitations
 
 ### Assumptions
-- Single AWS account
-- Default VPC quotas sufficient
-- ICMP/UDP traffic allowed by security groups
-- Python 3 available on Amazon Linux 2023
+
+- Both servers are AWS resources
+- ICMP, UDP, and TCP traffic is allowed by security groups
+- Network connectivity between servers is properly configured
 
 ### Limitations
-1. **Measurement method:** ICMP/UDP may not reflect actual application latency
-2. **Single target:** Only monitors one target instance
-3. **No persistence:** Metrics not stored (in-memory only)
-4. **No authentication:** API endpoints are public
-5. **IPv4 only:** Does not support IPv6
 
-## Future Improvements
+- Unable to evaluate latency improvements using AWS Global Accelerator
+- Unable to test scenarios different network environments (VPC vs on-premises)
+- Tests with small packets only, which may not reflect real-world traffic patterns
 
-1. **Add authentication** to API endpoints
-2. **Store metrics** in time-series database (InfluxDB, CloudWatch)
-3. **Multi-target monitoring** for comprehensive network visibility
-4. **Grafana dashboard** for visualization
-5. **Alerting** on latency thresholds
-6. **Application-layer latency** (HTTP, TCP connection time)
+###  Future Improvements
 
-## License
-
-MIT
-
----
-
-**Note:** This is a demonstration project for educational purposes.
+- Test connectivity between on-premises and VPC environments
+- Perform latency tests using larger data transfers to better simulate real-world workloads
+- Evaluate the impact of AWS Global Accelerator on latency and routing performance
