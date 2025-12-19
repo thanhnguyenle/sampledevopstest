@@ -4,8 +4,8 @@ resource "aws_internet_gateway" "igw_east" {
   tags     = merge(local.common_tags, { Name = "igw-us-east-1" })
 }
 
-resource "aws_internet_gateway" "igw_singapore" {
-  provider = aws.singapore
-  vpc_id   = aws_vpc.vpc_singapore.id
-  tags     = merge(local.common_tags, { Name = "igw-singapore" })
+resource "aws_internet_gateway" "igw_east2" {
+  provider = aws.us_east_2
+  vpc_id   = aws_vpc.vpc_east2.id
+  tags     = merge(local.common_tags, { Name = "igw-east2" })
 }

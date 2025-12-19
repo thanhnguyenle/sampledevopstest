@@ -8,20 +8,20 @@ resource "aws_route_table" "rt_east" {
   }
 
   route {
-    cidr_block                = aws_vpc.vpc_singapore.cidr_block
+    cidr_block                = aws_vpc.vpc_east2.cidr_block
     vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
   }
 
   tags = merge(local.common_tags, { Name = "rt-us-east-1" })
 }
 
-resource "aws_route_table" "rt_singapore" {
-  provider = aws.singapore
-  vpc_id   = aws_vpc.vpc_singapore.id
+resource "aws_route_table" "rt_east2" {
+  provider = aws.us_east_2
+  vpc_id   = aws_vpc.vpc_east2.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.igw_singapore.id
+    gateway_id = aws_internet_gateway.igw_east2.id
   }
 
   route {
@@ -29,7 +29,7 @@ resource "aws_route_table" "rt_singapore" {
     vpc_peering_connection_id = aws_vpc_peering_connection.peer.id
   }
 
-  tags = merge(local.common_tags, { Name = "rt-singapore" })
+  tags = merge(local.common_tags, { Name = "rt-east2" })
 }
 
 resource "aws_route_table_association" "rta_east" {
@@ -38,8 +38,8 @@ resource "aws_route_table_association" "rta_east" {
   route_table_id = aws_route_table.rt_east.id
 }
 
-resource "aws_route_table_association" "rta_singapore" {
-  provider       = aws.singapore
-  subnet_id      = aws_subnet.snet_singapore.id
-  route_table_id = aws_route_table.rt_singapore.id
+resource "aws_route_table_association" "rta_east2" {
+  provider       = aws.us_east_2
+  subnet_id      = aws_subnet.snet_east2.id
+  route_table_id = aws_route_table.rt_east2.id
 }

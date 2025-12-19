@@ -120,7 +120,7 @@ jobs:
         id: ec2_ips
         run: |
           echo "instance_01=$(terraform output -raw instance_us_east_public_ip)" >> $GITHUB_OUTPUT
-          echo "instance_02=$(terraform output -raw instance_singapore_private_ip)" >> $GITHUB_OUTPUT
+          echo "instance_02=$(terraform output -raw instance_east2_private_ip)" >> $GITHUB_OUTPUT
       
       - name: Create Ansible Inventory
         if: github.event.inputs.action == 'apply'

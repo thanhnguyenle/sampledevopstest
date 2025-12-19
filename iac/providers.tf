@@ -15,6 +15,6 @@ provider "aws" {
 }
 
 provider "aws" {
-  alias  = "singapore"
-  region = "ap-southeast-1"
+  alias  = "us_east_2"
+  region = "us-east-2"
 }

@@ -3,8 +3,8 @@ data "aws_ssm_parameter" "amazon_linux_2023_east" {
   name     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
-data "aws_ssm_parameter" "amazon_linux_2023_singapore" {
-  provider = aws.singapore
+data "aws_ssm_parameter" "amazon_linux_2023_east2" {
+  provider = aws.us_east_2
   name     = "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 }
 
@@ -24,12 +24,12 @@ resource "aws_instance" "instance_east" {
   tags = merge(local.common_tags, { Name = "instance-us-east-1" })
 }
 
-resource "aws_instance" "instance_singapore" {
-  provider               = aws.singapore
-  ami                    = data.aws_ssm_parameter.amazon_linux_2023_singapore.value
+resource "aws_instance" "instance_east2" {
+  provider               = aws.us_east_2
+  ami                    = data.aws_ssm_parameter.amazon_linux_2023_east2.value
   instance_type          = "t3.micro"
-  subnet_id              = aws_subnet.snet_singapore.id
-  vpc_security_group_ids = [aws_security_group.asg_singapore.id]
+  subnet_id              = aws_subnet.snet_east2.id
+  vpc_security_group_ids = [aws_security_group.asg_east2.id]
   user_data              = filebase64("cloud-init.yaml")
   
   root_block_device {
@@ -37,5 +37,5 @@ resource "aws_instance" "instance_singapore" {
     volume_type = "gp3"
   }
 
-  tags = merge(local.common_tags, { Name = "instance-singapore" })
+  tags = merge(local.common_tags, { Name = "instance-east2" })
 }

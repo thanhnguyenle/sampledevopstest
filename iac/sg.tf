@@ -47,11 +47,11 @@ resource "aws_security_group" "asg_east" {
   tags = merge(local.common_tags, { Name = "sg-us-east-1" })
 }
 
-resource "aws_security_group" "asg_singapore" {
-  provider    = aws.singapore
-  name_prefix = "instance-singapore-sg"
-  description = "Security group for Singapore instance"
-  vpc_id      = aws_vpc.vpc_singapore.id
+resource "aws_security_group" "asg_east2" {
+  provider    = aws.us_east_2
+  name_prefix = "instance-east2-sg"
+  description = "Security group for east2 instance"
+  vpc_id      = aws_vpc.vpc_east2.id
 
   ingress {
     description = "Allow SSH"
@@ -93,6 +93,6 @@ resource "aws_security_group" "asg_singapore" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = merge(local.common_tags, { Name = "sg-singapore" })
+  tags = merge(local.common_tags, { Name = "sg-east2" })
 }
 
